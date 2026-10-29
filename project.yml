@@ -1,0 +1,101 @@
+# Generate the Xcode project with:  xcodegen
+# Set your Apple ID team first (see README): WAKEY_TEAM_ID=XXXXXXXXXX xcodegen
+name: Wakey
+
+options:
+  bundleIdPrefix: com.isuser
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    DEVELOPMENT_TEAM: "${WAKEY_TEAM_ID}"
+    CODE_SIGN_STYLE: Automatic
+    CODE_SIGN_IDENTITY: "Apple Development"
+    ENABLE_HARDENED_RUNTIME: YES
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+targets:
+  # Menu bar app. Not sandboxed: it registers and talks to the root helper.
+  Wakey:
+    type: application
+    platform: macOS
+    sources:
+      - App
+      - Shared/Common
+      - Shared/Client
+      - Shared/System
+      # launchd plist for the helper, copied to Wakey.app/Contents/Library/LaunchDaemons
+      - path: LaunchDaemons/com.isuser.wakey.helper.plist
+        buildPhase:
+          copyFiles:
+            destination: wrapper
+            subpath: Contents/Library/LaunchDaemons
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: Wakey
+        LSUIElement: true # menu bar only, no Dock icon
+        LSMinimumSystemVersion: "14.0"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.isuser.wakey
+        PRODUCT_NAME: Wakey
+    dependencies:
+      - target: WakeyWidget
+      # Helper binary goes to Wakey.app/Contents/MacOS/WakeyHelper
+      - target: WakeyHelper
+        embed: true
+        copy:
+          destination: executables
+
+  # Desktop widget. Sandboxed (required for widgets); allowed to look up the helper's XPC service.
+  WakeyWidget:
+    type: app-extension
+    platform: macOS
+    sources:
+      - Widget
+      - Shared/Common
+      - Shared/Client
+    info:
+      path: Widget/Info.plist
+      properties:
+        CFBundleDisplayName: Wakey
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: Widget/WakeyWidget.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.temporary-exception.mach-lookup.global-name:
+          - com.isuser.wakey.helper
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.isuser.wakey.widget
+        PRODUCT_NAME: WakeyWidget
+
+  # Root launchd daemon that runs pmset. Registered by the app with SMAppService.
+  WakeyHelper:
+    type: tool
+    platform: macOS
+    sources:
+      - Helper
+      - Shared/Common
+      - Shared/System
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.isuser.wakey.helper
+        PRODUCT_NAME: WakeyHelper
+        SKIP_INSTALL: YES
+        OTHER_CODE_SIGN_FLAGS: "--identifier com.isuser.wakey.helper"
+
+schemes:
+  Wakey:
+    build:
+      targets:
+        Wakey: all
+    run:
+      config: Debug

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.isuser.wakey.helper</string>
+	<key>BundleProgram</key>
+	<string>Contents/MacOS/WakeyHelper</string>
+	<key>MachServices</key>
+	<dict>
+		<key>com.isuser.wakey.helper</key>
+		<true/>
+	</dict>
+	<!-- Start at boot so the helper can restore sleep and keep enforcing timers. -->
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>AssociatedBundleIdentifiers</key>
+	<array>
+		<string>com.isuser.wakey</string>
+	</array>
+</dict>
+</plist>
